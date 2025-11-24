@@ -1,42 +1,291 @@
+/* -------------------------------------------
+   1. CSS Variables
+------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --color-split-blue: #3E8DE2;
+    --color-split-white: #FFFFFF;
+    --color-text-dark: #333333;
+    --color-text-dim: #777777;
+    --color-button-bg: #5B9DD9;
+
+    --color-shadow-light: rgba(0, 0, 0, 0.08);
+    --color-shadow-medium: rgba(0, 0, 0, 0.15);
+
+    --font-primary: 'Manrope', sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
+/* -------------------------------------------
+   2. Global Reset & Base Styles
+------------------------------------------- */
 * {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font-primary);
+}
+
+body {
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: var(--color-text-dark);
 }
 
 a {
-  color: inherit;
-  text-decoration: none;
+    color: var(--color-text-dim);
+    text-decoration: none;
+    transition: color 0.3s;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+/* Utility */
+.full-width {
+    width: 100%;
+}
+
+/* -------------------------------------------
+   3. Dashboard Layout
+------------------------------------------- */
+.dashboard-body {
+    background-color: #F0F2F5;
+    margin: 0;
+    display: flex;
+    min-height: 100vh;
+}
+
+.dashboard-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--color-split-white);
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    width: 250px;
+    background-color: var(--color-split-blue);
+    color: var(--color-split-white);
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+}
+
+.sidebar-logo-icon {
+    font-size: 1.8rem;
+    margin-right: 10px;
+}
+.sidebar-logo-text {
+    font-size: 1.2rem;
+    font-weight: 800;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+}
+
+.sidebar-nav .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+.sidebar-nav .nav-link i {
+    margin-right: 15px;
+}
+.sidebar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-nav .nav-link.active {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: var(--color-split-white);
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: auto;
+}
+
+/* -------------------------------------------
+   4. Main Content
+------------------------------------------- */
+.main-content {
+    flex: 1;
+    padding: 30px;
+    overflow-y: auto;
+    background-color: #F8F9FA;
+}
+
+.main-content.center-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 50px 30px;
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+    width: 100%;
+    max-width: 600px;
+    text-align: left;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    color: var(--color-text-dim);
+}
+.breadcrumbs a {
+    color: var(--color-button-bg);
+    font-weight: 500;
+}
+.breadcrumbs i {
+    margin: 0 8px;
+}
+.breadcrumbs span {
+    color: var(--color-text-dark);
+    font-weight: 600;
+}
+
+/* -------------------------------------------
+   5. System Toggle Card
+------------------------------------------- */
+.system-toggle-section {
+    background-color: var(--color-split-white);
+    padding: 50px 70px;
+    border-radius: 18px;
+    box-shadow: 0 8px 25px var(--color-shadow-light),
+                0 4px 10px rgba(0, 0, 0, 0.03);
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+}
+
+.system-toggle-section h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.control-description {
+    color: var(--color-text-dim);
+    margin-bottom: 40px;
+    font-size: 1rem;
+}
+
+/* Toggle Switch */
+.toggle-switch-container {
+    position: relative;
+    display: inline-block;
+    width: 120px;
+    height: 68px;
+    margin: 30px 0;
+}
+
+.toggle-switch-container input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #ccc;
+    transition: 0.4s;
+}
+.toggle-slider:before {
+    content: "";
+    position: absolute;
+    height: 52px;
+    width: 52px;
+    left: 8px;
+    bottom: 8px;
+    background-color: white;
+    transition: 0.4s;
+}
+
+input:checked + .toggle-slider {
+    background-color: #28a745;
+}
+input:checked + .toggle-slider:before {
+    transform: translateX(52px);
+}
+
+.toggle-slider.round {
+    border-radius: 68px;
+}
+.toggle-slider.round:before {
+    border-radius: 50%;
+}
+
+/* Status Indicator */
+.status-indicator {
+    font-size: 1.2rem;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 10px;
+    max-width: 250px;
+    margin: 20px auto 0 auto;
+    transition: all 0.5s ease;
+}
+
+.status-indicator.active {
+    color: #28a745;
+    background-color: rgba(40, 167, 69, 0.1);
+    border: 1px solid #28a745;
+}
+
+.status-indicator.inactive {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid #dc3545;
+}
+
+/* -------------------------------------------
+   6. Responsive
+------------------------------------------- */
+@media (max-width: 992px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .main-content {
+        padding: 20px;
+    }
+
+    .system-toggle-section {
+        padding: 30px;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .main-content {
+        padding: 15px;
+    }
+
+    .system-toggle-section h1 {
+        font-size: 2rem;
+    }
 }
