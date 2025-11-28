@@ -289,3 +289,39 @@ input:checked + .toggle-slider:before {
         font-size: 2rem;
     }
 }
+/* ===== Modern Dashboard Cards ===== */
+
+.sensor-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  margin-top: 20px;
+}
+
+.sensor-card {
+  background: linear-gradient(135deg, #ffffff, #f5f5f5);
+  padding: 22px;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.sensor-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+}
+
+.sensor-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sensor-value {
+  font-size: 34px;
+  font-weight: bold;
+  margin-top: 6px;
+}
