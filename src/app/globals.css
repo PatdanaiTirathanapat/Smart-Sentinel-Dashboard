@@ -325,3 +325,16 @@ input:checked + .toggle-slider:before {
   font-weight: bold;
   margin-top: 6px;
 }
+
+/* กระพริบเฉพาะตัวเลข */
+@keyframes value-blink {
+  0% { color: red; }
+  50% { color: transparent; }
+  100% { color: red; }
+}
+
+.alert-value {
+  animation: value-blink 0.8s infinite;
+  font-weight: bold;
+}
+

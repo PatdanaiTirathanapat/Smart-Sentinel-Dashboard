@@ -1,6 +1,6 @@
 // lib/firebase.ts
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 import { getFirestore } from "firebase/firestore";       // ← NEW
 import { getStorage } from "firebase/storage";           // ← NEW
@@ -23,3 +23,9 @@ export const realtimeDB = getDatabase(app);
 
 export const firestoreDB = getFirestore(app);
 export const storage = getStorage(app);
+
+export const authReady = signInWithEmailAndPassword(
+  auth,
+  "smart.sentinel@gmail.com",
+  "123456"
+);

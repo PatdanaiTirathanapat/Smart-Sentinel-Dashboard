@@ -3,7 +3,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, Timestamp } from "firebase/firestore";
+// เพิ่ม query, orderBy, limit เข้ามาใช้งาน
+import { collection, getDocs, Timestamp, query, orderBy, limit } from "firebase/firestore";
 import { firestoreDB } from "../../libs/firebase";
 import Sidebar from "../../components/Sidebar"; 
 
@@ -30,32 +31,36 @@ export default function LogsPage() {
   useEffect(() => {
     async function loadLogs() {
       setLoading(true);
-      const colRef = collection(firestoreDB, "logs");
-      const snapshot = await getDocs(colRef);
+      try {
+        const colRef = collection(firestoreDB, "logs");
 
-      const allItems: LogItem[] = snapshot.docs
-        .map((doc: any) => ({ 
-            id: doc.id, 
-            ...doc.data() 
-        } as LogItem))
-        // Filter logs based on the 'source' field
-        .filter(log => log.source === "MQTT_Trigger_Camera");
+        // 1. สร้าง Query ดึงข้อมูลล่าสุด 50 รายการ (เรียงตามเวลา)
+        // เพื่อป้องกันการดึงข้อมูลทั้งหมดถ้า Database มีเยอะเกินไป
+        const q = query(colRef, orderBy("timestamp", "desc"), limit(50));
+        
+        const snapshot = await getDocs(q);
 
+        const allItems: LogItem[] = snapshot.docs
+          .map((doc: any) => ({ 
+              id: doc.id, 
+              ...doc.data() 
+          } as LogItem))
+          // 2. จุดที่แก้: กรองเอาเฉพาะที่มีคำว่า "Camera" ใน field source
+          .filter(log => log.source && log.source.toString().includes("Camera"));
 
-      const filteredAndSortedItems = allItems
-        // Sort descending by timestamp (latest first)
-        .sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis()); 
-
-      setLogs(filteredAndSortedItems);
-      setLoading(false);
+        // ไม่ต้อง sort ซ้ำแล้วเพราะเรา orderBy จาก Firestore มาแล้ว
+        setLogs(allItems);
+      } catch (error) {
+        console.error("Error loading logs:", error);
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadLogs();
   }, []);
 
   const toggleImage = (id: string) => {
-      // ถ้า id ที่ส่งมาตรงกับ id ที่เปิดอยู่ ให้ปิด (null)
-      // ถ้าไม่ตรง หรือยังไม่ได้เปิด ให้เปิด id นั้น
       setExpandedLogId(prevId => (prevId === id ? null : id));
   };
 
@@ -68,7 +73,7 @@ export default function LogsPage() {
         <main className="main-content">
             <div style={{ padding: 30 }}>
                 <h1>📁 Incident Logs (Click to view image)</h1>
-                <p>Total camera logs found: {logs.length}</p>
+              {/*  <p>Latest camera logs found: {logs.length}</p> */}
             </div>
 
             <div className="logs-grid" style={{ padding: '0 30px 30px' }}>
@@ -90,9 +95,14 @@ export default function LogsPage() {
                                 }}
                                 onClick={() => hasImage && toggleImage(log.id)}
                             >
-                                <p style={{ margin: 0 }}>
-                                    <b>{isExpanded ? '🔽 ' : '▶️ '} Timestamp:</b> {formatTimestamp(log.timestamp)}
-                                </p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <p style={{ margin: 0 }}>
+                                        <b>{isExpanded ? '🔽 ' : '▶️ '} Timestamp:</b> {formatTimestamp(log.timestamp)}
+                                    </p>
+                                    <span style={{ fontSize: '0.8em', color: '#666', background: '#eee', padding: '2px 8px', borderRadius: 4 }}>
+                                        {log.type}
+                                    </span>
+                                </div>
                                 
                                 {isExpanded && hasImage && (
                                     <div style={{ marginTop: 15, borderTop: '1px solid #eee', paddingTop: 10 }}>
@@ -103,7 +113,7 @@ export default function LogsPage() {
                                                 width: "100%",
                                                 maxWidth: "300px",
                                                 maxHeight: "300px",
-                                                objectFit: "cover",
+                                                objectFit: "contain", // เปลี่ยนเป็น contain ให้เห็นภาพครบ
                                                 borderRadius: 10,
                                                 display: 'block', 
                                                 margin: '0 auto', 
@@ -115,7 +125,7 @@ export default function LogsPage() {
                         );
                     })
                 ) : (
-                    <p>No incident logs found.</p>
+                    <p>No camera logs found in the last 50 entries.</p>
                 )}
             </div>
         </main>

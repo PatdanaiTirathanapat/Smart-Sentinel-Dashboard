@@ -2,11 +2,11 @@
 
 import React, { useEffect, useState } from "react";
 import { onValue, ref, update } from "firebase/database";
-import { realtimeDB } from "../libs/firebase";
-import { firestoreDB } from "../libs/firebase";
-import { collection, getDocs, Timestamp } from "firebase/firestore"; 
+import { realtimeDB, firestoreDB, auth } from "../libs/firebase";
+import { collection, getDocs, Timestamp, onSnapshot,query,where,orderBy,limit} from "firebase/firestore"; 
 import Sidebar from "../components/Sidebar"; 
-
+import { signInWithEmailAndPassword, onAuthStateChanged, User } from "firebase/auth";
+import {type QuerySnapshot,type DocumentData} from "firebase/firestore";
 
 interface SensorPayload {
   hit_alert?: number;
@@ -35,7 +35,23 @@ export default function DashboardPage() {
   const [isActive, setIsActive] = useState<boolean>(false);
   const [sensorData, setSensorData] = useState<SensorPayload>({});
   const [latestImageUrl, setLatestImageUrl] = useState<string | null>(null);
-  const [latestTimestamp, setLatestTimestamp] = useState<Timestamp | null>(null); 
+  const [latestTimestamp, setLatestTimestamp] = useState<Timestamp | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Firebase Authentication Login
+  useEffect(() => {
+    // ฟังสถานะ Auth ตลอดเวลา
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentUser(user);
+      } else {
+        // ถ้ายังไม่มี User ให้สั่ง Login
+        signInWithEmailAndPassword(auth, "smart.sentinel@gmail.com", "123456")
+          .catch((err) => console.error("❌ Login failed:", err));
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, []);
 
   useEffect(() => {
     // path in firebase realtime database: devices/sensor_node/state
@@ -49,35 +65,46 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    async function loadLatestLog() {
-      const colRef = collection(firestoreDB, "logs");
-      const snapshot = await getDocs(colRef);
+useEffect(() => {
+    if (!currentUser) return; 
 
-      const allItems: LogItem[] = snapshot.docs
-        .map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as LogItem));
+    const logsRef = collection(firestoreDB, "logs");
 
-      // Filter logs to include only "MQTT_Trigger_Camera" source**
-      const filteredCameraLogs = allItems
-        .filter(log => log.source === "MQTT_Trigger_Camera");
-      // Sort the filtered logs descending by timestamp (latest first)**
-      const latestCameraLogs = filteredCameraLogs
-        .sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
+    // 1. ดึงข้อมูลล่าสุดมา "เผื่อ" ไว้เยอะหน่อย (เช่น 20 ตัว) 
+    // โดยยังไม่ต้องสนใจว่า Source คืออะไร เอาเรียงตามเวลามาก่อน
+    const q = query(
+      logsRef,
+      orderBy("timestamp", "desc"),
+      limit(20) // ดึงมา 20 ตัวล่าสุด (เผื่อมี sensor อื่นแทรกมาเยอะๆ)
+    );
 
-      if (latestCameraLogs.length > 0 && latestCameraLogs[0]?.imageUrl) {
-        setLatestImageUrl(latestCameraLogs[0].imageUrl);
-        setLatestTimestamp(latestCameraLogs[0].timestamp);
+    const unsub = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        // 2. ใช้ JavaScript วนหา document ตัวแรกที่มีคำว่า "Camera" ใน source
+        const cameraDoc = snapshot.docs.find(doc => {
+            const data = doc.data() as any;
+            // เช็คว่ามี field source และในคำนั้นมีคำว่า "Camera" ผสมอยู่ไหม (includes)
+            return data.source && data.source.toString().includes("Camera");
+        });
+
+        if (cameraDoc) {
+             const data = cameraDoc.data() as any;
+             setLatestImageUrl(data.imageUrl || null);
+             setLatestTimestamp(data.timestamp || null);
+        } 
+
+        
+
       } else {
         setLatestImageUrl(null);
         setLatestTimestamp(null);
       }
-    }
+    }, (error) => {
+        console.error("❌ Firestore Error:", error);
+    });
 
-    loadLatestLog();
-  }, []);
+    return () => unsub();
+  }, [currentUser]);
 
   //ARMED/DISARMED
   useEffect(() => {
@@ -133,29 +160,57 @@ export default function DashboardPage() {
             <div style={{ marginTop: 40, textAlign: "center" }}>
                 <h3>📡 Sensor Data (Firebase)</h3>
             </div>
-            <div className="sensor-grid">          
-                {/* Motion Alert */}
-                <div className="sensor-card">
-                    <h4 className="sensor-title">🚶 Motion Alert</h4>
-                    <p className="sensor-value">{sensorData.motion_alert ?? "-"}</p>
-                </div>
 
-                {/* Hit Alert */}
-                <div className="sensor-card">
-                    <h4 className="sensor-title">💥 Hit Alert</h4>
-                    <p className="sensor-value">{sensorData.hit_alert ?? "-"}</p>
-                </div>
+            <div className="sensor-grid">
 
-                {/* System Alert */}
-                <div className="sensor-card">
-                    <h4 className="sensor-title">⚠️ System Alert</h4>
-                    <p className="sensor-value">{sensorData.system_alert ?? "-"}</p>
-               </div>
+              {/* Motion Alert */}
+              <div className="sensor-card">
+                <h4 className="sensor-title">🚶 Motion Alert</h4>
+                <p
+                  className={`sensor-value ${
+                    sensorData.motion_alert === 1 ? "alert-value" : ""
+                  }`}
+                >
+                  {sensorData.motion_alert ?? "-"}
+                </p>
+              </div>
 
-            {/* Temperature (°C) */}
-            <div className="sensor-card">
+              {/* Hit Alert */}
+              <div className="sensor-card">
+                <h4 className="sensor-title">💥 Hit Alert</h4>
+                <p
+                  className={`sensor-value ${
+                    sensorData.hit_alert === 1 ? "alert-value" : ""
+                  }`}
+                >
+                  {sensorData.hit_alert ?? "-"}
+                </p>
+            </div>
+
+              {/* Fire Alert */}
+              <div className="sensor-card">
+                <h4 className="sensor-title">🔥 Fire Alert</h4>
+                <p
+                  className={`sensor-value ${
+                    sensorData.fire_alert === 1 ? "alert-value" : ""
+                  }`}
+                >
+                  {sensorData.fire_alert ?? "-"}
+                </p>
+              </div>
+
+              {/* Temperature °C */}
+              <div className="sensor-card">
                 <h4 className="sensor-title">🌡️ Temperature (°C)</h4>
-                <p className="sensor-value">{sensorData.temp_c ?? "-"}</p>
+                <p
+                  className={`sensor-value ${
+                    sensorData.temp_c != null && sensorData.temp_c >= 50
+                      ? "alert-value"
+                      : ""
+                  }`}
+                >
+                  {sensorData.temp_c ?? "-"}
+              </p>
             </div>
         </div>
 
@@ -194,3 +249,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
