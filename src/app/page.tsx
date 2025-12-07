@@ -158,7 +158,7 @@ useEffect(() => {
 
             {/* Firebase Real-time data */}
             <div style={{ marginTop: 40, textAlign: "center" }}>
-                <h3>📡 Sensor Data (Firebase)</h3>
+                <h3>📡 Sensor Data (Realtime)</h3>
             </div>
 
             <div className="sensor-grid">
